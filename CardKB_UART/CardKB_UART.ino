@@ -1,15 +1,19 @@
 #include <Adafruit_NeoPixel.h>
-#define PIN           13
-#define NUMPIXELS      1
-Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
-
 #include <SoftwareSerial.h>
 
-//#include <Wire.h>
+#define PIN           13
+#define NUMPIXELS      1
 
-#define Set_Bit(val, bitn)    (val |=(1<<(bitn)))
-#define Clr_Bit(val, bitn)     (val&=~(1<<(bitn)))
-#define Get_Bit(val, bitn)    (val &(1<<(bitn)) )
+#define Set_Bit(val, bitn)  (val |=(1<<(bitn)))
+#define Clr_Bit(val, bitn)  (val&=~(1<<(bitn)))
+#define Get_Bit(val, bitn)  (val &(1<<(bitn)) )
+
+#define shiftPressed  (PINB & 0x10 ) != 0x10
+#define symPressed    (PINB & 0x80 ) != 0x80
+#define fnPressed     (PINB & 0x40 ) != 0x40
+
+#define KEY_REPEAT_DELAY_1    500
+#define KEY_REPEAT_DELAY_N    50
 
 //       d0   d1     d2  d3 d4 d5 d6 d7 d8 d9 d10 d11
 //A3：   esc   1      2  3  4  5  6  7  8  9  0   del
@@ -19,6 +23,7 @@ Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ80
 //sym: d15
 //shift: d12
 //fn: d14
+
 
 unsigned char KeyMap[48][7] =
 { //nor, shift,long_shift, sym,long_sym,fn,long_fn,
@@ -71,45 +76,24 @@ unsigned char KeyMap[48][7] =
   { '.', '.', '.', '>', '>', 174, 174},//.
   { ' ' , ' ', ' ', ' ', ' ', 175, 175}//space
 };
-#define shiftPressed (PINB & 0x10 ) != 0x10
-#define symPressed (PINB & 0x80 ) != 0x80
-#define fnPressed (PINB & 0x40 ) != 0x40
+
 int _shift = 0, _fn = 0, _sym = 0, idle = 0;
-unsigned char KEY = 0, hadPressed = 0;
 int Mode = 0; //0->normal.1->shift 2->long_shift, 3->sym, 4->long_shift 5->fn,6->long_fn
 
 SoftwareSerial mySerial(A5, A4); // RX, TX
+Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
 
 void flashOn()
 {
   pixels.setPixelColor(0, pixels.Color(3, 3, 3)); pixels.show();
 }
+
+
 void flashOff()
 {
   pixels.setPixelColor(0, pixels.Color(0, 0, 0)); pixels.show();
 }
 
-#if 0
-void requestEvent()
-{
-  if (hadPressed == 1)
-  {
-    Wire.write(KeyMap[KEY - 1][Mode]);
-    //KEY=0;
-    if ((Mode == 1) || (Mode == 3) || (Mode == 5)) {
-      Mode = 0;
-      _shift = 0;
-      _sym = 0;
-      _fn = 0;
-    }
-
-    hadPressed = 0;
-    return;
-  }
-}
-#endif
-
-//#define UART_TX A4
 
 void setup()
 {
@@ -125,7 +109,7 @@ void setup()
   PORTB = 0xff;
   DDRD = 0x00;
   PORTD = 0xff;
-  //pinMode(UART_TX, OUTPUT);
+  mySerial.begin(115200);
 
   pixels.begin();
   for (int j = 0; j < 3; j++)
@@ -142,21 +126,6 @@ void setup()
     }
 
   }
-  pixels.setPixelColor(0, pixels.Color(30, 0, 0)); pixels.show();
-  //Wire.begin(0x5f);
-  //Wire.onRequest(requestEvent);
-  mySerial.begin(115200);
-  mySerial.println("Hello, world?");
-  #if 0
-  {
-    int i;
-    for (i = 1000; i < 1000; i++) {
-      digitalWrite(UART_TX, i & 1 ? HIGH : LOW);
-      pixels.setPixelColor(0, pixels.Color(i & 1 ? 10 : 0, i & 2 ? 10 : 0, i & 4 ? 10 : 0)); pixels.show();
-      delay(200);
-    }
-  }
-  #endif
   pixels.setPixelColor(0, pixels.Color(0, 0, 0)); pixels.show();
 }
 
@@ -169,117 +138,45 @@ unsigned char GetInput()
   delay(2);
   switch (PIND)
   {
-    case 254: while (PIND != 0xff) {
-        flashOn();
-        //delay(1);
-      } flashOff();   hadPressed = 1; return  1; break;
-    case 253: while (PIND != 0xff) {
-        flashOn();
-        // delay(1);
-      } flashOff();  hadPressed = 1; return 2; break;
-    case 251: while (PIND != 0xff) {
-        flashOn();
-        // delay(1);
-      } flashOff();  hadPressed = 1;  return 3; break;
-    case 247: while (PIND != 0xff) {
-        flashOn();
-        // delay(1);
-      } flashOff();  hadPressed = 1;  return 4; break;
-    case 239: while (PIND != 0xff) {
-        flashOn();
-        //delay(1);
-      } flashOff();  hadPressed = 1; return 5; break;
-    case 223: while (PIND != 0xff) {
-        flashOn();
-        //   delay(1);
-      } flashOff();  hadPressed = 1; return 6; break;
-    case 191: while (PIND != 0xff) {
-        flashOn();
-        // delay(1);
-      } flashOff();  hadPressed = 1; return 7; break;
-    case 127: while (PIND != 0xff) {
-        flashOn();
-        // delay(1);
-      } flashOff();  hadPressed = 1; return  8; break;
+    case 254: return  1; break;
+    case 253: return  2; break;
+    case 251: return  3; break;
+    case 247: return  4; break;
+    case 239: return  5; break;
+    case 223: return  6; break;
+    case 191: return  7; break;
+    case 127: return  8; break;
   }
   switch (PINB)
   {
-    case 222: while (PINB != 223) {
-        flashOn();
-        //delay(1);
-      } flashOff();  hadPressed = 1; return 9; break;
-    case 221: while (PINB != 223) {
-        flashOn();
-        //delay(1);
-      } flashOff();  hadPressed = 1; return 10; break;
-    case 219: while (PINB != 223) {
-        flashOn();
-        // delay(1);
-      } flashOff();  hadPressed = 1; return 11; break;
-    case 215: while (PINB != 223) {
-        flashOn();
-        // delay(1);
-      } flashOff();  hadPressed = 1; return 12; break;
+    case 222: return  9; break;
+    case 221: return 10; break;
+    case 219: return 11; break;
+    case 215: return 12; break;
   }
 
   digitalWrite(A3, HIGH);
-  digitalWrite(A2,  LOW);
+  digitalWrite(A2, LOW);
   digitalWrite(A1, HIGH);
   digitalWrite(A0, HIGH);
   delay(2);
   switch (PIND)
   {
-    case 254: while (PIND != 0xff) {
-        flashOn();
-        //  delay(1);
-      } flashOff();  hadPressed = 1; return  13; break;
-    case 253: while (PIND != 0xff) {
-        flashOn();
-        //delay(1);
-      } flashOff();  hadPressed = 1; return 14; break;
-    case 251: while (PIND != 0xff) {
-        flashOn();
-        // delay(1);
-      } flashOff();  hadPressed = 1;  return 15; break;
-    case 247: while (PIND != 0xff) {
-        flashOn();
-        delay(1);
-      } flashOff();  hadPressed = 1;  return 16; break;
-    case 239: while (PIND != 0xff) {
-        flashOn();
-        // delay(1);
-      } flashOff();  hadPressed = 1; return 17; break;
-    case 223: while (PIND != 0xff) {
-        flashOn();
-        // delay(1);
-      } flashOff();  hadPressed = 1; return 18; break;
-    case 191: while (PIND != 0xff) {
-        flashOn();
-        //delay(1);
-      } flashOff();  hadPressed = 1; return 19; break;
-    case 127: while (PIND != 0xff) {
-        flashOn();
-        //  delay(1);
-      } flashOff();  hadPressed = 1; return  20; break;
+    case 254: return 13; break;
+    case 253: return 14; break;
+    case 251: return 15; break;
+    case 247: return 16; break;
+    case 239: return 17; break;
+    case 223: return 18; break;
+    case 191: return 19; break;
+    case 127: return 20; break;
   }
   switch (PINB)
   {
-    case 222: while (PINB != 223) {
-        flashOn();
-        //delay(1);
-      } flashOff();  hadPressed = 1; return 21; break;
-    case 221: while (PINB != 223) {
-        flashOn();
-        // delay(1);
-      } flashOff();  hadPressed = 1; return 22; break;
-    case 219: while (PINB != 223) {
-        flashOn();
-        //delay(1);
-      } flashOff();  hadPressed = 1; return 23; break;
-    case 215: while (PINB != 223) {
-        flashOn();
-        // delay(1);
-      } flashOff();  hadPressed = 1; return 24; break;
+    case 222: return 21; break;
+    case 221: return 22; break;
+    case 219: return 23; break;
+    case 215: return 24; break;
   }
 
   digitalWrite(A3, HIGH);
@@ -289,57 +186,21 @@ unsigned char GetInput()
   delay(2);
   switch (PIND)
   {
-    case 254: while (PIND != 0xff) {
-        flashOn();
-        //delay(1);
-      } flashOff();  hadPressed = 1; return  25; break;
-    case 253: while (PIND != 0xff) {
-        flashOn();
-        // delay(1);
-      } flashOff();  hadPressed = 1; return 26; break;
-    case 251: while (PIND != 0xff) {
-        flashOn();
-        //delay(1);
-      } flashOff();  hadPressed = 1;  return 27; break;
-    case 247: while (PIND != 0xff) {
-        flashOn();
-        // delay(1);
-      } flashOff();  hadPressed = 1;  return 28; break;
-    case 239: while (PIND != 0xff) {
-        flashOn();
-        //  delay(1);
-      } flashOff();  hadPressed = 1; return 29; break;
-    case 223: while (PIND != 0xff) {
-        flashOn();
-        // delay(1);
-      } flashOff();  hadPressed = 1; return 30; break;
-    case 191: while (PIND != 0xff) {
-        flashOn();
-        //  delay(1);
-      } flashOff();  hadPressed = 1; return 31; break;
-    case 127: while (PIND != 0xff) {
-        flashOn();
-        //  delay(1);
-      } flashOff();  hadPressed = 1; return  32; break;
+    case 254: return 25; break;
+    case 253: return 26; break;
+    case 251: return 27; break;
+    case 247: return 28; break;
+    case 239: return 29; break;
+    case 223: return 30; break;
+    case 191: return 31; break;
+    case 127: return 32; break;
   }
   switch (PINB)
   {
-    case 222: while (PINB != 223) {
-        flashOn();
-        //  delay(1);
-      } flashOff();  hadPressed = 1; return 33; break;
-    case 221: while (PINB != 223) {
-        flashOn();
-        //delay(1);
-      } flashOff();  hadPressed = 1; return 34; break;
-    case 219: while (PINB != 223) {
-        flashOn();
-        //delay(1);
-      } flashOff();  hadPressed = 1; return 35; break;
-    case 215: while (PINB != 223) {
-        flashOn();
-        // delay(1);
-      } flashOff();  hadPressed = 1; return 36; break;
+    case 222: return 33; break;
+    case 221: return 34; break;
+    case 219: return 35; break;
+    case 215: return 36; break;
   }
 
   digitalWrite(A3, HIGH);
@@ -349,66 +210,34 @@ unsigned char GetInput()
   delay(2);
   switch (PIND)
   {
-    case 254: while (PIND != 0xff) {
-        flashOn();
-        //delay(1);
-      } flashOff();  hadPressed = 1; return  37; break;
-    case 253: while (PIND != 0xff) {
-        flashOn();
-        //delay(1);
-      } flashOff();  hadPressed = 1; return 38; break;
-    case 251: while (PIND != 0xff) {
-        flashOn();
-        //delay(1);
-      } flashOff();  hadPressed = 1;  return 39; break;
-    case 247: while (PIND != 0xff) {
-        flashOn();
-        // delay(1);
-      } flashOff();  hadPressed = 1;  return 40; break;
-    case 239: while (PIND != 0xff) {
-        flashOn();
-        // delay(1);
-      } flashOff();  hadPressed = 1; return 41; break;
-    case 223: while (PIND != 0xff) {
-        flashOn();
-        // delay(1);
-      } flashOff();  hadPressed = 1; return 42; break;
-    case 191: while (PIND != 0xff) {
-        flashOn();
-        //delay(1);
-      } flashOff();  hadPressed = 1; return 43; break;
-    case 127: while (PIND != 0xff) {
-        flashOn();
-        //delay(1);
-      } flashOff();  hadPressed = 1; return  44; break;
+    case 254: return 37; break;
+    case 253: return 38; break;
+    case 251: return 39; break;
+    case 247: return 40; break;
+    case 239: return 41; break;
+    case 223: return 42; break;
+    case 191: return 43; break;
+    case 127: return 44; break;
   }
   switch (PINB)
   {
-    case 222: while (PINB != 223) {
-        flashOn();
-        //delay(1);
-      } flashOff();  hadPressed = 1; return 45; break;
-    case 221: while (PINB != 223) {
-        flashOn();
-        // delay(1);
-      } flashOff();  hadPressed = 1; return 46; break;
-    case 219: while (PINB != 223) {
-        flashOn();
-        //delay(1);
-      } flashOff();  hadPressed = 1; return 47; break;
-    case 215: while (PINB != 223) {
-        flashOn();
-        //delay(1);
-      } flashOff();  hadPressed = 1; return 48; break;
+    case 222: return 45; break;
+    case 221: return 46; break;
+    case 219: return 47; break;
+    case 215: return 48; break;
   }
-  hadPressed = 0;
+  
   return 255;
 }
 
 
-
 void loop()
 {
+  unsigned char key;
+  static bool keyWasPressed = false;
+  static unsigned long keyRepeatTime;
+  unsigned long now;
+  
   if (shiftPressed)
   {
     _sym = 0; _fn = 0; idle = 0;
@@ -542,9 +371,6 @@ void loop()
     }
   }
 
-
-
-
   switch (Mode)
   {
     case 0://normal
@@ -571,19 +397,29 @@ void loop()
     case 6://long_fn
       pixels.setPixelColor(0, pixels.Color(0, 0, 5)); break;
   }
-
   pixels.show(); // This sends the updated pixel color to the hardware.
-  KEY = GetInput();
-  if (KEY != 255) {
-    mySerial.write(KeyMap[KEY - 1][Mode]);
+ 
+  key = GetInput();
+  if (key != 255) {
+    now = millis();
+    if (!keyWasPressed) {
+      mySerial.write(KeyMap[key - 1][Mode]);
+      keyWasPressed  = true;
+      keyRepeatTime = now + KEY_REPEAT_DELAY_1;
+      flashOn();
+    } else {
+      if (now >= keyRepeatTime) {
+        mySerial.write(KeyMap[key - 1][Mode]);
+        keyRepeatTime += KEY_REPEAT_DELAY_N;
+      }
+    }
+  } else {
+    if (keyWasPressed) {
+      keyWasPressed = false;
+      flashOff();
+    }
   }
-  #if 0
-  if (hadPressed == 0)
-  {
-    KEY = GetInput();
-    mySerial.write(KEY);
-  }
-  #endif
+
   idle++;
   delay(10);
 }
