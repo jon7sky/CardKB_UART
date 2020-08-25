@@ -411,15 +411,16 @@ void loop()
       if (now >= keyRepeatTime) {
         mySerial.write(KeyMap[key - 1][Mode]);
         keyRepeatTime += KEY_REPEAT_DELAY_N;
+        flashOn();
       }
     }
   } else {
     if (keyWasPressed) {
       keyWasPressed = false;
-      flashOff();
     }
   }
 
   idle++;
   delay(10);
+  flashOff();
 }
