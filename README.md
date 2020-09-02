@@ -25,6 +25,10 @@ The signals on the cable are now:
 ![CardKB with USBASP](images/Programmer.jpg)
 
 The board is programmed using the Arduino IDE and a programmer that supports the Atmel ATMEGA328P. I chose the USBASP programmer.
+The programming connector has this pinout:
+
+![Programming Pinout](images/ProgrammingPinout.png)
+
 I used these board settings:
 
 ![Board Settings](images/ArduinoCardKBBoardSettings.jpg)
