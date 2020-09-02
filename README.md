@@ -29,6 +29,8 @@ I used these board settings:
 
 ![Board Settings](images/ArduinoCardKBBoardSettings.jpg)
 
+The sketch is written to the board using the "Sketch --> Upload Using Programmer" menu.
+
 This board uses the internal oscillator. It is important that you do not accidentally choose an external oscillator, or else you won't
 be able to program it again unless you actually attach an external oscillator to the board. I found this out the hard way.
 I now have two dead keyboards. It's a good thing I bought three when I placed my order.
