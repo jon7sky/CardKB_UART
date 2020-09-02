@@ -1,6 +1,6 @@
 # Using A CardKB Keyboard With A UART
 
-[insert pic of keyboard here]
+![CardKB Keyboard](images/CardKBKeyboard.jpg)
 
 The CardKB is a simple credit card sized keyboard available from M5Stack, and from other stores like AliExpress or BangGood.
 
@@ -22,7 +22,7 @@ The signals on the cable are now:
 
 # Programming
 
-[insert pic of keyboard with programmer]
+![CardKB with USBASP](images/Programmer.jpg)
 
 The board is programmed using the Arduino IDE and a programmer that supports the Atmel ATMEGA328P. I chose the USBASP programmer.
 I used these board settings:
@@ -38,4 +38,4 @@ I now have two dead keyboards. It's a good thing I bought three when I placed my
 For easy testing, just connect this keyboard to your computer with the use of a USB-to-UART adapter, A.K.A. an FTDI board.
 Start up a terminal program like TeraTerm, choose the correct COM port, and make sure the baud rate is set to 115,200.
 
-[insert pic of keyboard and comptuer screen here]
+![TeraTerm](images/TeraTerm.jpg)
