@@ -29,7 +29,7 @@ The programming connector has this pinout:
 
 ![Programming Pinout](images/ProgrammingPinout.png)
 
-I used these board settings:
+In the picture of the programmer connected to the board, the black wire is GND and the red wire is VCC. I used these board settings:
 
 ![Board Settings](images/ArduinoCardKBBoardSettings.jpg)
 
