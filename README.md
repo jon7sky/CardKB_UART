@@ -27,7 +27,7 @@ The signals on the cable are now:
 The board is programmed using the Arduino IDE and a programmer that supports the Atmel ATMEGA328P. I chose the USBASP programmer.
 I used these board settings:
 
-[insert pic of board settings]
+![Board Settings](images/ArduinoCardKBBoardSettings.jpg)
 
 This board uses the internal oscillator. It is important that you do not accidentally choose an external oscillator, or else you won't
 be able to program it again unless you actually attach an external oscillator to the board. I found this out the hard way.
